@@ -3,14 +3,14 @@
 A Python wrapper and interactive CLI for automating **MITRE Caldera** adversary emulation via its REST API.
 
 With this, you can:
-- Authenticate with an **API key** (no fragile `/login` calls)
+- Authenticate with an **API key** 
 - Enumerate **agents**, **adversaries**, **abilities**, and **planners**
-- Launch **operations** interactively or in one go
+- Launch **operations** interactively or in one go from the CLI
 - Choose **adversary** and **planner** at runtime
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 src/
@@ -23,7 +23,7 @@ README.md
 
 ---
 
-## ⚙️ Requirements
+##  Requirements
 
 - Python 3.9+
 - A running **Caldera** server (v5+)
@@ -38,7 +38,7 @@ pip install -r requirements.txt
 
 ---
 
-## 🔑 Configuration
+##  Configuration
 
 Edit `example_usage.py`:
 
@@ -50,7 +50,7 @@ VERIFY_SSL = False
 
 ---
 
-## 🚀 Usage
+##  Usage
 
 ### Basic mode
 
@@ -81,7 +81,7 @@ You can:
 
 ---
 
-## 🔍 How it works
+##  How it works
 
 - Authenticates with `KEY: <API_KEY>` header
 - Retrieves resources via:
@@ -106,7 +106,7 @@ Example operation payload:
 
 ---
 
-## 🛠️ Manual API checks
+##  Manual API checks
 
 List planners:
 
@@ -120,28 +120,3 @@ List adversaries:
 curl -H "KEY: ADMIN123" http://<caldera-ip>:8888/api/v2/adversaries
 ```
 
----
-
-## 🩺 Troubleshooting
-
-**`405 Method Not Allowed`**
-- Don’t use `/api/login`. Use API key auth instead.
-
-**`422: planner.id may not be null`**
-- Ensure you pick a valid planner from `/api/v2/planners`.
-
-**`401 Unauthorized`**
-- API key is wrong or missing.
-
----
-
-## ⚠️ Disclaimer
-
-For authorized security testing and research only.  
-Do not target systems you don’t own or have permission to test.
-
----
-
-## 📜 License
-
-MIT License
