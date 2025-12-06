@@ -1,0 +1,26 @@
+import requests, logging
+
+class CalderaClient:
+    def __init__(self, config):
+        self.server_url = config["server_url"].rstrip("/")
+        self.session = requests.Session()
+        self.session.headers.update({"KEY": config["api_key"], "Content-Type": "application/json"})
+        self.verify_ssl = config["verify_ssl"]
+
+    def authenticate(self):
+        r = self.session.get(f"{self.server_url}/api/v2/adversaries", verify=self.verify_ssl)
+        return r.status_code == 200
+
+    def get_agents(self):
+        return self.session.get(f"{self.server_url}/api/v2/agents", verify=self.verify_ssl).json()
+
+    def get_abilities(self):
+        return self.session.get(f"{self.server_url}/api/v2/abilities", verify=self.verify_ssl).json()
+
+    def run_operation(self, agent, ability_id):
+        payload = {
+            "paw": agent["paw"],
+            "ability_id": ability_id
+        }
+        r = self.session.post(f"{self.server_url}/api/v2/links", json=payload, verify=self.verify_ssl)
+        return r.json() if r.status_code == 200 else {"error": r.text}
