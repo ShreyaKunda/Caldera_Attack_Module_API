@@ -1,6 +1,6 @@
 {
-  "server_url": "http://127.0.0.1:8888",
-  "api_key": "ADMIN123",
+  "caldera_url": "http://127.0.0.1:8888",
+  "api_key": "REPLACE_WITH_YOUR_API_KEY",
   "verify_ssl": false,
-  "auto_agent_selection": true
+  "default_execution_mode": "direct"   // "direct" or "operation"
 }
