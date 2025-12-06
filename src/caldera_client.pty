@@ -1,60 +1,21 @@
 import requests
-from urllib.parse import urljoin
+from src.utils import log_error
 
 class CalderaClient:
-    def __init__(self, caldera_url, api_key, verify_ssl=False):
-        self.base = caldera_url.rstrip("/") + "/"
-        self.session = requests.Session()
-        self.session.headers.update({
-            "KEY": api_key,
-            "Content-Type": "application/json"
-        })
-        self.verify_ssl = verify_ssl
-
-    def authenticate(self):
-        # quick check - get agents
-        try:
-            r = self.session.get(urljoin(self.base, "api/v2/agents"), verify=self.verify_ssl, timeout=10)
-            return r.status_code == 200
-        except Exception:
-            return False
+    def __init__(self, base_url, api_key):
+        self.base = base_url.rstrip("/")
+        self.headers = {"KEY": api_key}
 
     def get_agents(self):
-        r = self.session.get(urljoin(self.base, "api/v2/agents"), verify=self.verify_ssl)
-        if r.status_code == 200:
-            return r.json()
-        return []
+        res = requests.get(f"{self.base}/api/v2/agents", headers=self.headers)
+        return res.json() if res.status_code == 200 else []
 
-    def get_abilities(self):
-        r = self.session.get(urljoin(self.base, "api/v2/abilities"), verify=self.verify_ssl)
-        if r.status_code == 200:
-            return r.json()
-        return []
+    def execute_ability(self, agent_id, ability_id):
+        payload = {"paw": agent_id, "ability_id": ability_id}
+        res = requests.post(f"{self.base}/api/v2/abilities/execute", headers=self.headers, json=payload)
 
-    def execute_direct(self, agent_paw, ability_id):
-        """
-        Direct execution endpoint: POST /api/v2/agents/{paw}/execute
-        Lightweight — does not create an operation in the UI.
-        """
-        url = urljoin(self.base, f"api/v2/agents/{agent_paw}/execute")
-        payload = {"ability_id": ability_id}
-        r = self.session.post(url, json=payload, verify=self.verify_ssl)
-        return {"status_code": r.status_code, "text": r.text, "ok": r.ok, "json": (r.json() if r.ok else None)}
-
-    def create_operation(self, name, agent_paws, abilities_list):
-        """
-        Create an operation that contains abilities.
-        The operations API differs by Caldera version; this payload is conservative.
-        """
-        url = urljoin(self.base, "api/v2/operations")
-        payload = {
-            "name": name,
-            "agents": agent_paws,
-            "state": "running",
-            "autonomous": 0,
-            "phases": {
-                "1": [{"ability_id": a} for a in abilities_list]
-            }
-        }
-        r = self.session.post(url, json=payload, verify=self.verify_ssl)
-        return {"status_code": r.status_code, "text": r.text, "ok": r.ok, "json": (r.json() if r.ok else None)}
+        if res.status_code == 200:
+            return True, res.json()
+        else:
+            log_error(f"Execution failed: {res.text}")
+            return False, None
