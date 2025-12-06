@@ -1,13 +1,12 @@
 import sys
 import os
 
-# Add the src directory to the Python path if needed
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 from caldera_attack_module import CalderaAttack
 
-SERVER_URL = "http://192.168.195.128:8888"  # Change if needed
-API_KEY = "ADMIN123"  # From default.yml -> api_key_red or api_key_blue
+SERVER_URL = "http://192.168.195.128:8888"
+API_KEY = "ADMIN123"
 VERIFY_SSL = False
 
 def interactive_mode():
@@ -25,10 +24,13 @@ def interactive_mode():
         print("1. List agents")
         print("2. List adversaries")
         print("3. List abilities")
-        print("4. Run attack scenario")
-        print("5. Exit")
+        print("4. Execute single ability")
+        print("5. Run full attack scenario")
+        print("6. List techniques")
+        print("7. Execute attack by MITRE technique")
+        print("8. Exit")
 
-        choice = input("\nEnter your choice (1-5): ").strip()
+        choice = input("\nEnter your choice (1-8): ").strip()
 
         if choice == "1":
             agents = caldera.get_agents()
@@ -46,73 +48,50 @@ def interactive_mode():
             abilities = caldera.get_abilities()
             print(f"\n⚡ Abilities ({len(abilities)}):")
             for ability in abilities[:10]:
-                print(f"  - {ability.get('name')}: {ability.get('description')}")
+                print(f"  - {ability.get('name')} ({ability.get('ability_id')})")
             if len(abilities) > 10:
                 print(f"... and {len(abilities) - 10} more")
 
         elif choice == "4":
-            scenario_name = input("Enter a name for this operation: ").strip() or "Interactive_Op"
+            abilities = caldera.get_abilities()
+            for i, ab in enumerate(abilities[:30], start=1):
+                print(f"{i}. {ab.get('name')} ({ab.get('ability_id')})")
 
-            adversaries = caldera.get_adversaries()
-            print("\nAvailable adversaries:")
-            for i, adv in enumerate(adversaries, start=1):
-                print(f"{i}. {adv.get('name')} - {adv.get('description')}")
-            adv_choice = int(input("Enter the number of the adversary to use: ").strip())
-            adversary_id = adversaries[adv_choice - 1].get("adversary_id")
+            ab_choice = int(input("Select ability number: ").strip())
+            agent = caldera.get_agents()[0]["paw"]
 
-            planners = caldera.get_planners()
-            print("\nAvailable planners:")
-            for i, p in enumerate(planners, start=1):
-                print(f"{i}. {p.get('name')} - {p.get('description')}")
-            plan_choice = int(input("Enter the number of the planner to use: ").strip())
-            planner_id = planners[plan_choice - 1].get("id")
-
-            print(f"\n🚀 Running scenario '{scenario_name}' with adversary '{adversaries[adv_choice-1].get('name')}' and planner '{planners[plan_choice-1].get('name')}'")
-            results = caldera.execute_attack_scenario(scenario_name, adversary_id, planner_id)
-
-            if results["success"]:
-                print("✅ Scenario completed successfully!")
-            else:
-                print(f"❌ Scenario failed or encountered errors: {results['error']}")
+            ability_id = abilities[ab_choice - 1]["ability_id"]
+            result = caldera.execute_single_ability(ability_id, agent)
+            print("Result:", result)
 
         elif choice == "5":
+            adversaries = caldera.get_adversaries()
+            planners = caldera.get_planners()
+            result = caldera.execute_attack_scenario(
+                "InteractiveAttack",
+                adversaries[0]["adversary_id"],
+                planners[0]["id"]
+            )
+            print(result)
+
+        elif choice == "6":
+            techs = caldera.get_techniques_with_abilities()
+            print("\n🎯 MITRE Techniques:")
+            for tech, items in techs.items():
+                print(f"- {tech} ({len(items)} abilities)")
+
+        elif choice == "7":
+            technique = input("Enter MITRE Technique ID or name (ex: T1059): ").strip()
+            agent = caldera.get_agents()[0]["paw"]
+            result = caldera.execute_by_technique(technique, agent)
+            print(result)
+
+        elif choice == "8":
             print("👋 Goodbye!")
             break
 
         else:
-            print("❌ Invalid choice. Please enter 1-5.")
-
-def run_basic_attack_scenario():
-    caldera = CalderaAttack(SERVER_URL, API_KEY, VERIFY_SSL)
-    if not caldera.authenticate():
-        print("❌ Authentication failed.")
-        return False
-
-    agents = caldera.get_agents()
-    adversaries = caldera.get_adversaries()
-    planners = caldera.get_planners()
-
-    if not agents or not adversaries or not planners:
-        print("❌ Missing required resources.")
-        return False
-
-    # Choose defaults
-    adversary_id = adversaries[0]["adversary_id"]
-    batch_planner = next((p for p in planners if p.get("name", "").lower() == "batch"), planners[0])
-    planner_id = batch_planner["id"]
-
-    print(f"🚀 Running default scenario with adversary '{adversaries[0]['name']}' and planner '{batch_planner['name']}'")
-    results = caldera.execute_attack_scenario("RL_Training_Attack_Scenario", adversary_id, planner_id)
-
-    if results["success"]:
-        print("✅ Basic scenario completed successfully!")
-        return True
-    else:
-        print(f"❌ Scenario failed: {results['error']}")
-        return False
+            print("❌ Invalid selection.")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--interactive":
-        interactive_mode()
-    else:
-        run_basic_attack_scenario()
+    interactive_mode()
