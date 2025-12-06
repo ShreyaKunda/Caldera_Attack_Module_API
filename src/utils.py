@@ -1,19 +1,12 @@
-import json
-from pathlib import Path
+from rich.console import Console
 
-CONFIG_PATH = Path("config/settings.json")
-DEFAULT_MAPPING = Path("config/ability_mapping.json")
+console = Console()
 
-def load_config():
-    if not CONFIG_PATH.exists():
-        raise FileNotFoundError(f"Config file not found: {CONFIG_PATH.resolve()}")
-    with open(CONFIG_PATH, "r") as f:
-        cfg = json.load(f)
-    return cfg
+def log_info(msg):
+    console.print(f"[bold cyan][INFO][/bold cyan] {msg}")
 
-def load_mapping(path=None):
-    p = DEFAULT_MAPPING if path is None else Path(path)
-    if not p.exists():
-        return {}
-    with open(p, "r") as f:
-        return json.load(f)
+def log_success(msg):
+    console.print(f"[bold green][SUCCESS][/bold green] {msg}")
+
+def log_error(msg):
+    console.print(f"[bold red][ERROR][/bold red] {msg}")
