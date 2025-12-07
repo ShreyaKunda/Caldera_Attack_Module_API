@@ -1,47 +1,23 @@
 import json
-from src.caldera_client import CalderaClient
-from src.attack_engine import AttackEngine
-from src.mapping_builder import build_mapping
-from src.utils import log_info, log_success, log_error
+from src.attack_runner import AttackRunner
 
-def main():
-    settings = json.load(open("config/settings.json"))
+SETTINGS = "config/settings.json"
+CSV = "data/abilities.csv"
 
-    # Create mapping if missing
-    try:
-        open("config/ability_mapping.json")
-    except:
-        log_info("Mapping file missing. Building from CSV...")
-        build_mapping("data/abilities.csv", "config/ability_mapping.json")
+with open(SETTINGS) as f:
+    settings = json.load(f)
 
-    client = CalderaClient(settings["caldera_url"], settings["api_key"])
-    engine = AttackEngine(client, "config/ability_mapping.json")
+runner = AttackRunner(settings, CSV)
+abilities = runner.loader.load()
 
-    agents = client.get_agents()
-    if not agents:
-        log_error("No active agents found.")
-        return
+print("\n=== Available Abilities ===")
+for i, a in enumerate(abilities, start=1):
+    print(f"{i}. {a['technique_id']} - {a['name']} ({a['tactic']})")
 
-    agent_id = agents[0]['paw']
-    log_success(f"Selected agent: {agent_id}")
+choice = int(input("\nEnter attack number: ")) - 1
+selected = abilities[choice]
 
-    techniques = engine.list_techniques()
+print(f"\n🚀 Executing: {selected['name']} ({selected['technique_id']})...")
 
-    print("\nAvailable MITRE Techniques:")
-    for i, t in enumerate(techniques):
-        print(f"[{i}] {t}")
-
-    try:
-        choice = int(input("\nSelect technique number: "))
-    except:
-        log_error("Invalid selection.")
-        return
-
-    technique = techniques[choice]
-    log_info(f"Selected Technique: {technique}")
-
-    engine.run_attack(technique, agent_id)
-
-
-if __name__ == "__main__":
-    main()
+result = runner.run_ability(selected)
+print("\nResult:", result)
