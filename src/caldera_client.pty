@@ -1,21 +1,32 @@
 import requests
-from src.utils import log_error
+import logging
+
+logger = logging.getLogger("caldera_client")
+logging.basicConfig(level=logging.INFO)
 
 class CalderaClient:
-    def __init__(self, base_url, api_key):
-        self.base = base_url.rstrip("/")
-        self.headers = {"KEY": api_key}
+    def __init__(self, server_url, api_key, verify_ssl=False):
+        self.url = server_url.rstrip("/")
+        self.session = requests.Session()
+        self.session.headers.update({"KEY": api_key, "Content-Type": "application/json"})
+        self.verify_ssl = verify_ssl
+
+    def test_connection(self):
+        r = self.session.get(f"{self.url}/api/v2/abilities", verify=self.verify_ssl)
+        return r.status_code == 200
 
     def get_agents(self):
-        res = requests.get(f"{self.base}/api/v2/agents", headers=self.headers)
-        return res.json() if res.status_code == 200 else []
+        return self.session.get(f"{self.url}/api/v2/agents", verify=self.verify_ssl).json()
 
-    def execute_ability(self, agent_id, ability_id):
-        payload = {"paw": agent_id, "ability_id": ability_id}
-        res = requests.post(f"{self.base}/api/v2/abilities/execute", headers=self.headers, json=payload)
+    def execute_ability(self, ability_id, agent_group="red"):
+        payload = {
+            "ability_id": ability_id,
+            "obfuscator": "plain-text",
+            "paw": None,  
+            "host_group": agent_group
+        }
+        r = self.session.post(f"{self.url}/api/v2/abilities/execute", json=payload, verify=self.verify_ssl)
 
-        if res.status_code == 200:
-            return True, res.json()
-        else:
-            log_error(f"Execution failed: {res.text}")
-            return False, None
+        if r.status_code in (200, 201):
+            return {"success": True, "response": r.json()}
+        return {"success": False, "error": r.text}
